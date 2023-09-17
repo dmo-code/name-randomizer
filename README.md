@@ -2,6 +2,8 @@
 
 ## Version 0.8.1
 
+<img src="assets/nr-small.png" alt="drawing" width="250"/>
+
 Die Anwendung hat die folgenden Hauptfunktionen:
 
 1. **Namen aus einer JSON-Datei laden:** Die Anwendung verwendet den `useEffect`-Hook, um Namen aus einer JSON-Datei ("names.json") zu laden, sobald die Komponente montiert wird. Die geladenen Namen werden im Zustand `names` gespeichert.
@@ -39,3 +41,5 @@ The application has the following main functions:
 This React application allows users to
 
 Translated with www.DeepL.com/Translator (free version)
+
+<img src="assets/nr-big.png" alt="drawing" width="800"/>

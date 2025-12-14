@@ -1,45 +1,43 @@
-# Name-Randomizer
+# Namen-Randomizer
 
-## Version 0.8.1
+Eine barrierearme, responsive Web-App, um zufällig Namen aus einer oder mehreren Listen zu ziehen. Listen bleiben lokal gespeichert, sodass du auch später nahtlos weitermachen kannst.
 
-<img src="assets/nr-small.png" alt="drawing" width="250"/>
+## Features
+- Fair-Draw: Jeder Name wird pro Runde nur einmal gezogen, Restbestand wird angezeigt
+- Button „Neue Runde“ hält gezogene Namen gesperrt und startet eine weitere Ziehung ohne die bisherigen
+- Editor für Namenlisten (ein Name pro Zeile oder Komma-getrennt), optional alphabetisch sortierbar
+- Bis zu 10 benannte Listen anlegen, auswählen, umbenennen und lokal gesichert weiterverwenden
+- Alle Listen als JSON exportieren und später wieder importieren (Backup/Wiederherstellung)
+- Session-History im Drawer: Zieh-Verlauf nach Liste/Runde ansehen und als TXT oder Markdown herunterladen
+- Eingaben werden bereinigt (z. B. spitze Klammern entfernt, Länge begrenzt), um Script-Injektionen zu verhindern
+- Tastaturkürzel: `Cmd/Ctrl + S` speichert die aktuelle Liste
+- Aria-Live-Statusmeldungen, Skip-Link, klare Fokuszustände
+- Responsive UI mit eigener Gestaltung (kein CRA-UI mehr)
 
-Die Anwendung hat die folgenden Hauptfunktionen:
+## Struktur
+- `index.html` – Einstieg, Markup und Layout-Slots
+- `static/js/app.js` – Logik für Laden, Ziehen, Speichern, Listen-Management
+- `static/css/app.css` – Styles (Schrift aus Google Fonts, System-Fallback)
+- `names.json` – Startdaten (wird beim ersten Laden genutzt, Änderungen laufen lokal)
 
-1. **Namen aus einer JSON-Datei laden:** Die Anwendung verwendet den `useEffect`-Hook, um Namen aus einer JSON-Datei ("names.json") zu laden, sobald die Komponente montiert wird. Die geladenen Namen werden im Zustand `names` gespeichert.
+## Nutzung (lokal)
+1. Repo in einen beliebigen Webserver-Root legen (z. B. MAMP, nginx oder `npx serve .`).
+2. Im Browser `index.html` öffnen.
+3. Namen im Editor eintragen (ein Name pro Zeile oder Komma-getrennt) und speichern. Bis zu 10 Listen können benannt, ausgewählt, umbenannt oder gelöscht werden; sie bleiben lokal gespeichert.
 
-2. **Zufällige Namen ziehen:** Wenn der Benutzer auf den "Namen ziehen"-Button klickt (`pickRandomName`-Funktion), wird ein zufälliger Name aus der Liste der verfügbaren Namen ausgewählt und in der Liste der ausgewählten Namen (`selectedNames`) angezeigt. Der ausgewählte Name wird aus der Liste der verfügbaren Namen entfernt.
+> Hinweis: Änderungen werden lokal gehalten (LocalStorage); die ausgelieferte `names.json` bleibt unverändert.
 
-3. **Namen zurücksetzen:** Der "Namen zurücksetzen"-Button (`handleResetNames`-Funktion) ermöglicht es dem Benutzer, die ausgewählten Namen zurückzusetzen und sie wieder zur Liste der verfügbaren Namen hinzuzufügen.
+## Barrierefreiheit & UX
+- Skip-Link für Tastaturnavigation.
+- Fokus-Styles und hohe Kontraste.
+- `aria-live` für Statusmeldungen (Ziehung, Fehler, Restbestand).
+- Reduced-Motion-Beachtung (`prefers-reduced-motion`).
 
-4. **JSON-Datei bearbeiten und speichern:** Die Anwendung bietet einen Abschnitt zum Bearbeiten und Speichern einer JSON-Datei. Der Benutzer kann den JSON-Inhalt in einem Textfeld bearbeiten. Wenn der "Speichern"-Button geklickt wird (`handleSaveJson`-Funktion), wird der bearbeitete JSON-Inhalt geparst, und die Namen in der Anwendung werden durch die neuen Namen aus der JSON-Datei ersetzt.
+## Anpassen
+- Farben/Typografie in `static/css/app.css` unter `:root`.
+- Initiale Namen in `names.json`.
+- Version-Hinweis im Hero-Badge (`index.html`).
 
-5. **Bootstrap-Styling:** Die Anwendung verwendet das Bootstrap CSS-Framework für das Styling von Elementen wie Buttons, Textareas und Überschriften.
-
-6. **Versionshinweis:** Am Ende der Anwendung gibt es einen Versionshinweis.
-
-Diese React-Anwendung ermöglicht es Benutzern, Namen zufällig auszuwählen, sie zurückzusetzen und die Liste der Namen über eine JSON-Datei zu bearbeiten und zu speichern. Sie verwendet React-Hooks wie `useState` und `useEffect`, um den Zustand der Anwendung zu verwalten und asynchrone Daten abzurufen.
-
-## en - Name Randomiser
-
-The "Name Randomiser", allows you to drag random names from a list and display them. Click on "Namen ziehen" (multiple clicks possible 🥳) to select a name. With "Namen zurücksetzen" the selection can be deleted. In the "Bearbeite JSON-Datei" section, the list of names can be adjusted and saved. Simple and straightforward!
-
-The application has the following main functions:
-
-1. **Load names from a JSON file:** The application uses the `useEffect` hook to load names from a JSON file ("names.json") when the component is mounted. The loaded names are stored in the `names` state. 2.
-
-2. **Drag random names:** When the user clicks on the "drag names" button (`pickRandomName` function), a random name is selected from the list of available names and displayed in the list of selected names (`selectedNames`). The selected name is removed from the list of available names. 3.
-
-3. **Reset Names:** The "Reset Names" button (`handleResetNames` function) allows the user to reset the selected names and add them back to the list of available names.
-
-4. **Edit and save JSON file:** The application provides a section for editing and saving a JSON file. The user can edit the JSON content in a text field. When the "Save" button is clicked (`handleSaveJson` function), the edited JSON content is parsed and the names in the application are replaced with the new names from the JSON file.
-
-5. **Bootstrap styling:** The application uses the Bootstrap CSS framework for styling elements such as buttons, textareas and headings.
-
-6. **Version note:** There is a version note at the end of the application.
-
-This React application allows users to
-
-Translated with www.DeepL.com/Translator (free version)
-
-<img src="assets/nr-big.png" alt="drawing" width="800"/>
+## Lizenz
+Ohne ausdrückliche Lizenzangabe bitte vor externer Nutzung Freigabe einholen.  
+Lizenzhinweis: Build-Abhängigkeiten (React, React DOM, Scheduler, regenerator-runtime) unter MIT; Schrift „Space Grotesk“ unter SIL Open Font License (über Google Fonts geladen).

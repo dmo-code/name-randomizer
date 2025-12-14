@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description"
+        content="Namen-Randomizer – ziehe zufällige Namen, verwalte die Liste und speichere sie als JSON." />
+    <title>Namen-Randomizer</title>
+    <link rel="stylesheet" href="static/css/app.css" />
+    <script type="module" src="static/js/app.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+    <header class="hero" role="banner">
+        <div class="hero__top">
+            <div class="hero__badge" aria-label="Version">
+                Version 1.1.1
+            </div>
+        </div>
+        <p class="eyebrow">Team-Tool • schnell • einfach • wiederverwendbar</p>
+        <h1>Namen-Randomizer</h1>
+        <p class="lede">
+            Ziehe zufällige Namen aus deiner Liste, halte die Auswahl fest und bearbeite die Namen direkt hier im
+            Browser.
+            Deine Liste bleibt lokal gespeichert – so kannst du auch später nahtlos weitermachen.
+        </p>
+        <div class="hero__actions">
+            <button id="drawBtn" class="btn primary" type="button">Namen ziehen</button>
+            <button id="newRoundBtn" class="btn ghost" type="button">Neue Runde (ohne bisherige)</button>
+            <button id="resetBtn" class="btn ghost" type="button">Liste zurücksetzen</button>
+            <button id="historyBtn" class="btn ghost" type="button">Zieh-Verlauf</button>
+        </div>
+        <p class="meta" id="metaInfo" aria-live="polite"></p>
+    </header>
+
+    <main id="main" class="layout" role="main">
+        <section class="card stack" aria-labelledby="draw-section-heading">
+            <div class="card__header">
+                <div>
+                    <p class="eyebrow">Auswahl</p>
+                    <h2 id="draw-section-heading">Gezogene Namen</h2>
+                </div>
+                <span class="pill" id="remainingBadge" aria-live="polite"></span>
+            </div>
+            <div class="drawn" aria-live="polite" aria-atomic="true">
+                <p class="empty" id="emptyState">Noch kein Name gezogen.</p>
+                <ol id="drawnList" class="drawn__list"></ol>
+            </div>
+            <div class="card__footer">
+                <span class="status" id="drawStatus" role="status" aria-live="polite"></span>
+            </div>
+        </section>
+
+        <section class="card stack" aria-labelledby="editor-heading">
+            <div class="card__header">
+                <div>
+                    <p class="eyebrow">Daten</p>
+                    <h2 id="editor-heading">Namenliste bearbeiten</h2>
+                </div>
+            </div>
+            <div class="list-controls">
+                <div>
+                    <label class="label" for="listSelect">Gespeicherte Listen</label>
+                    <p class="helper">Bis zu 10 Listen. Wähle eine aus oder lege eine neue an. <span
+                            id="listCount"></span></p>
+                </div>
+                <div class="list-controls__row">
+                    <select id="listSelect" class="input">
+                    </select>
+                    <input id="listName" class="input" type="text" placeholder="Listenname bearbeiten" />
+                    <button id="newListBtn" class="btn ghost" type="button">Neue Liste</button>
+                    <div class="list-controls__row--secondary">
+                        <button id="deleteListBtn" class="btn ghost danger" type="button">Liste entfernen</button>
+                    </div>
+                    <div class="list-controls__row--secondary">
+                        <button id="exportListsBtn" class="btn ghost" type="button">Alle Listen exportieren</button>
+                        <button id="importListsBtn" class="btn ghost" type="button">Listen importieren</button>
+                        <input id="importFileInput" type="file" accept="application/json" hidden>
+                    </div>
+                </div>
+            </div>
+            <label class="label" for="jsonEditor">Neue Namen eintragen</label>
+            <p class="helper">
+                Schreibe deine Namen einfach untereinander oder trenne sie mit Kommas.
+                Beispiele: <code>Anna Müller</code>, <code>Max van den Berg</code>, <code>Sofia de la Cruz</code>
+            </p>
+            <textarea id="jsonEditor" class="editor" spellcheck="false" aria-describedby="editor-help"
+                placeholder="Anna Müller&#10;Max van den Berg&#10;Sofia de la Cruz"></textarea>
+            <div class="editor__actions">
+                <div class="form-group">
+                    <input type="checkbox" id="sortNames" />
+                    <label for="sortNames">Alphabetisch sortieren beim Speichern</label>
+                </div>
+                <div class="btn-group">
+                    <button id="saveBtn" class="btn primary" type="button">Namen speichern</button>
+                    <button id="clearBtn" class="btn ghost" type="button">Alle Namen entfernen</button>
+                </div>
+            </div>
+            <p id="editorStatus" class="status" role="status" aria-live="polite"></p>
+            <p id="editor-help" class="helper">
+                Tipp: Mit <kbd>Cmd/Ctrl</kbd> + <kbd>S</kbd> kannst du ebenfalls speichern. Die App formatiert deine
+                Eingabe automatisch.
+            </p>
+        </section>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div>
+            <p class="eyebrow">Hinweis</p>
+            <p>Alle Daten bleiben lokal im Browser. Ideal für kleine Ziehungen, Team-Standups oder Workshops.</p>
+        </div>
+    </footer>
+
+    <div id="modalOverlay" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"
+        aria-hidden="true">
+        <div class="modal__dialog">
+            <h3 id="modalTitle">Liste löschen?</h3>
+            <p id="modalMessage">Möchtest du diese Liste wirklich löschen?</p>
+            <div class="modal__actions">
+                <button id="modalCancel" type="button" class="btn ghost">Abbrechen</button>
+                <button id="modalConfirm" type="button" class="btn danger">Löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="historyDrawer" class="drawer" aria-hidden="true" aria-label="Zieh-Verlauf">
+        <div class="drawer__header">
+            <h3>Zieh-Verlauf</h3>
+            <button id="closeHistoryBtn" class="btn ghost" type="button">Schließen</button>
+        </div>
+        <div class="drawer__actions drawer__actions--stacked">
+            <select id="historyDownloadFormat" class="input input--dense">
+                <option value="txt">TXT</option>
+                <option value="md">Markdown</option>
+            </select>
+            <button id="downloadHistoryBtn" class="btn ghost" type="button">Download</button>
+        </div>
+        <div class="drawer__body" id="historyBody">
+            <p class="helper" id="historyEmpty">Noch keine Ziehungen in dieser Sitzung.</p>
+            <ol id="historyList" class="history__list"></ol>
+        </div>
+    </aside>
+</body>
+
+</html>

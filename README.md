@@ -3,9 +3,12 @@
 Eine barrierearme, responsive Web-App, um zufällig Namen aus einer oder mehreren Listen zu ziehen. Listen bleiben lokal gespeichert, sodass du auch später nahtlos weitermachen kannst.
 
 ## Features
-- Zufallsauswahl mit Anzeige der bereits gezogenen Namen
+- Fair-Draw: Jeder Name wird pro Runde nur einmal gezogen, Restbestand wird angezeigt
+- Button „Neue Runde“ hält gezogene Namen gesperrt und startet eine weitere Ziehung ohne die bisherigen
 - Editor für Namenlisten (ein Name pro Zeile oder Komma-getrennt), optional alphabetisch sortierbar
 - Bis zu 10 benannte Listen anlegen, auswählen, umbenennen und lokal gesichert weiterverwenden
+- Alle Listen als JSON exportieren und später wieder importieren (Backup/Wiederherstellung)
+- Session-History im Drawer: Zieh-Verlauf nach Liste/Runde ansehen und als TXT oder Markdown herunterladen
 - Eingaben werden bereinigt (z. B. spitze Klammern entfernt, Länge begrenzt), um Script-Injektionen zu verhindern
 - Tastaturkürzel: `Cmd/Ctrl + S` speichert die aktuelle Liste
 - Aria-Live-Statusmeldungen, Skip-Link, klare Fokuszustände

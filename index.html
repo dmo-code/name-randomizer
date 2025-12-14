@@ -16,8 +16,10 @@
     <a class="skip-link" href="#main">Zum Inhalt springen</a>
 
     <header class="hero" role="banner">
-        <div class="hero__badge" aria-label="Version">
-            Version 1.0.1
+        <div class="hero__top">
+            <div class="hero__badge" aria-label="Version">
+                Version 1.1.1
+            </div>
         </div>
         <p class="eyebrow">Team-Tool • schnell • einfach • wiederverwendbar</p>
         <h1>Namen-Randomizer</h1>
@@ -28,7 +30,9 @@
         </p>
         <div class="hero__actions">
             <button id="drawBtn" class="btn primary" type="button">Namen ziehen</button>
+            <button id="newRoundBtn" class="btn ghost" type="button">Neue Runde (ohne bisherige)</button>
             <button id="resetBtn" class="btn ghost" type="button">Liste zurücksetzen</button>
+            <button id="historyBtn" class="btn ghost" type="button">Zieh-Verlauf</button>
         </div>
         <p class="meta" id="metaInfo" aria-live="polite"></p>
     </header>
@@ -71,6 +75,11 @@
                     <button id="newListBtn" class="btn ghost" type="button">Neue Liste</button>
                     <div class="list-controls__row--secondary">
                         <button id="deleteListBtn" class="btn ghost danger" type="button">Liste entfernen</button>
+                    </div>
+                    <div class="list-controls__row--secondary">
+                        <button id="exportListsBtn" class="btn ghost" type="button">Alle Listen exportieren</button>
+                        <button id="importListsBtn" class="btn ghost" type="button">Listen importieren</button>
+                        <input id="importFileInput" type="file" accept="application/json" hidden>
                     </div>
                 </div>
             </div>
@@ -117,6 +126,24 @@
             </div>
         </div>
     </div>
+
+    <aside id="historyDrawer" class="drawer" aria-hidden="true" aria-label="Zieh-Verlauf">
+        <div class="drawer__header">
+            <h3>Zieh-Verlauf</h3>
+            <button id="closeHistoryBtn" class="btn ghost" type="button">Schließen</button>
+        </div>
+        <div class="drawer__actions drawer__actions--stacked">
+            <select id="historyDownloadFormat" class="input input--dense">
+                <option value="txt">TXT</option>
+                <option value="md">Markdown</option>
+            </select>
+            <button id="downloadHistoryBtn" class="btn ghost" type="button">Download</button>
+        </div>
+        <div class="drawer__body" id="historyBody">
+            <p class="helper" id="historyEmpty">Noch keine Ziehungen in dieser Sitzung.</p>
+            <ol id="historyList" class="history__list"></ol>
+        </div>
+    </aside>
 </body>
 
 </html>

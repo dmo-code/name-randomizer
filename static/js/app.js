@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 
 const drawBtn = $("#drawBtn");
 const resetBtn = $("#resetBtn");
+const newRoundBtn = $("#newRoundBtn");
 const saveBtn = $("#saveBtn");
 const clearBtn = $("#clearBtn");
 const sortCheckbox = $("#sortNames");
@@ -9,6 +10,16 @@ const listSelect = $("#listSelect");
 const listNameInput = $("#listName");
 const newListBtn = $("#newListBtn");
 const deleteListBtn = $("#deleteListBtn");
+const exportListsBtn = $("#exportListsBtn");
+const importListsBtn = $("#importListsBtn");
+const importFileInput = $("#importFileInput");
+const historyBtn = $("#historyBtn");
+const historyDrawer = $("#historyDrawer");
+const closeHistoryBtn = $("#closeHistoryBtn");
+const downloadHistoryBtn = $("#downloadHistoryBtn");
+const historyDownloadFormat = $("#historyDownloadFormat");
+const historyList = $("#historyList");
+const historyEmpty = $("#historyEmpty");
 const drawnList = $("#drawnList");
 const emptyState = $("#emptyState");
 const drawStatus = $("#drawStatus");
@@ -23,9 +34,129 @@ const STORAGE_KEY = "name-randomizer:lists";
 let allNames = [];
 let availableNames = [];
 let drawnNames = [];
+let blockedNames = [];
 let lists = [];
 let activeListId = null;
+let historyByList = {};
 
+const ensureHistoryGroup = (listId, name) => {
+  if (!listId) return;
+  const label = name || "Unbenannt";
+  if (!historyByList[listId]) {
+    historyByList[listId] = { name: label, rounds: [{ label: 1, entries: [] }] };
+  } else {
+    historyByList[listId].name = label;
+    if (!Array.isArray(historyByList[listId].rounds) || historyByList[listId].rounds.length === 0) {
+      historyByList[listId].rounds = [{ label: 1, entries: [] }];
+    }
+  }
+};
+
+const startNewHistoryRound = (listId) => {
+  if (!listId) return;
+  if (!historyByList[listId]) {
+    ensureHistoryGroup(listId, lists.find((l) => l.id === listId)?.name);
+  }
+  const group = historyByList[listId];
+  if (!group) return;
+  const nextLabel = (group.rounds?.length || 0) + 1;
+  group.rounds.push({ label: nextLabel, entries: [] });
+};
+
+const addHistoryEntry = (listId, name) => {
+  const group = historyByList[listId];
+  if (!group || !Array.isArray(group.rounds) || group.rounds.length === 0) return;
+  const currentRound = group.rounds[group.rounds.length - 1];
+  currentRound.entries.push(name);
+};
+
+const collectHistoryLines = () => {
+  const lines = [];
+  const groups = Object.values(historyByList || {});
+  if (!groups.length) {
+    return ["Keine Ziehungen vorhanden."];
+  }
+  groups.forEach((group) => {
+    lines.push(`${group.name}`);
+    if (!group.rounds || group.rounds.length === 0) {
+      lines.push("  Keine Runden.");
+      return;
+    }
+    group.rounds.forEach((round) => {
+      lines.push(`  Runde ${round.label} (${round.entries.length})`);
+      if (round.entries.length === 0) {
+        lines.push("    Keine Ziehungen in dieser Runde.");
+      } else {
+        round.entries.forEach((entry, idx) => {
+          lines.push(`    ${idx + 1}. ${entry}`);
+        });
+      }
+    });
+  });
+  return lines;
+};
+
+const downloadHistoryTxt = () => {
+  const lines = collectHistoryLines();
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "zieh-verlauf.txt";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const downloadHistoryMarkdown = () => {
+  const groups = Object.values(historyByList || {});
+  if (!groups.length) {
+    downloadBlobAs("zieh-verlauf.md", "Keine Ziehungen vorhanden.\n");
+    return;
+  }
+  const parts = [];
+  groups.forEach((group) => {
+    parts.push(`## ${group.name}`);
+    if (!group.rounds || group.rounds.length === 0) {
+      parts.push("- Keine Runden");
+      return;
+    }
+    group.rounds.forEach((round) => {
+      parts.push(`### Runde ${round.label} (${round.entries.length})`);
+      if (round.entries.length === 0) {
+        parts.push("- Keine Ziehungen in dieser Runde.");
+      } else {
+        round.entries.forEach((entry, idx) => {
+          parts.push(`${idx + 1}. ${entry}`);
+        });
+      }
+      parts.push("");
+    });
+  });
+  downloadBlobAs("zieh-verlauf.md", parts.join("\n"));
+};
+
+const downloadBlobAs = (filename, content) => {
+  const blob = new Blob([content], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const handleDownloadHistory = () => {
+  const format = historyDownloadFormat?.value || "txt";
+  if (format === "md") {
+    downloadHistoryMarkdown();
+  } else {
+    downloadHistoryTxt();
+  }
+};
 const setStatus = (el, message, isError = false) => {
   el.textContent = message;
   el.classList.toggle("error", isError);
@@ -64,13 +195,25 @@ const parseEditorInput = (value) => {
   return names;
 };
 
+const updateModeCopy = () => {
+  if (newRoundBtn) {
+    newRoundBtn.disabled = false;
+    newRoundBtn.removeAttribute("aria-disabled");
+    newRoundBtn.title = "Neue Runde ohne bisherige Namen starten";
+  }
+};
+
+const refreshAvailability = () => {
+  const blockedSet = new Set(blockedNames);
+  availableNames = allNames.filter((name) => !blockedSet.has(name));
+};
+
 const updateCounts = () => {
-  remainingBadge.textContent = `${availableNames.length}/${allNames.length || 0} verfügbar`;
+  const total = allNames.length || 0;
+  remainingBadge.textContent = `${availableNames.length}/${total} verfügbar`;
   metaInfo.textContent =
-    allNames.length > 0
-      ? `${drawnNames.length} gezogen, ${availableNames.length} übrig.`
-      : "Keine Daten geladen.";
-  drawBtn.disabled = availableNames.length === 0;
+    total > 0 ? `${blockedNames.length} gezogen, ${availableNames.length} übrig.` : "Keine Daten geladen.";
+  drawBtn.disabled = total === 0 || availableNames.length === 0;
 };
 
 const renderDrawnList = () => {
@@ -88,6 +231,56 @@ const renderDrawnList = () => {
   }
   updateCounts();
 };
+
+const renderHistory = () => {
+  if (!historyList || !historyEmpty) return;
+  historyList.innerHTML = "";
+  const groups = Object.values(historyByList || {});
+  if (!groups.length) {
+    historyEmpty.hidden = false;
+    return;
+  }
+  historyEmpty.hidden = true;
+  groups.forEach((group) => {
+    if (!group.rounds || group.rounds.length === 0) return;
+    const title = document.createElement("li");
+    const totalEntries = group.rounds.reduce((sum, r) => sum + (r.entries?.length || 0), 0);
+    title.textContent = `${group.name} (${totalEntries})`;
+    title.classList.add("history__title");
+    historyList.appendChild(title);
+    const roundsList = document.createElement("ol");
+    roundsList.classList.add("history__list");
+    group.rounds.forEach((round) => {
+      const roundItem = document.createElement("li");
+      const roundHeader = document.createElement("div");
+      roundHeader.textContent = `Runde ${round.label} (${round.entries.length})`;
+      roundHeader.style.fontWeight = "600";
+      roundHeader.style.marginBottom = "15px";
+      roundItem.appendChild(roundHeader);
+
+      if (round.entries.length > 0) {
+        const entryList = document.createElement("ol");
+        entryList.classList.add("history__list");
+        round.entries.forEach((entry, idx) => {
+          const li = document.createElement("li");
+          li.textContent = `${idx + 1}. ${entry.name}`;
+          entryList.appendChild(li);
+        });
+        roundItem.appendChild(entryList);
+      } else {
+        const emptyNote = document.createElement("p");
+        emptyNote.classList.add("helper");
+        emptyNote.textContent = "Keine Ziehungen in dieser Runde.";
+        roundItem.appendChild(emptyNote);
+      }
+
+      roundsList.appendChild(roundItem);
+    });
+    historyList.appendChild(roundsList);
+  });
+};
+
+const NAME_PATTERN = /^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9'’.\-\s]{0,98}[A-Za-zÀ-ÿ0-9]$/;
 
 const sanitizeName = (name) => {
   // Entfernt potenziell gefährliche Zeichen (Tags/Skripte) und begrenzt die Länge
@@ -107,8 +300,8 @@ const validateNames = (names) => {
       throw new Error("Alle Einträge müssen nicht-leere Strings sein.");
     }
     const safe = sanitizeName(n);
-    if (!safe) {
-      throw new Error("Ungültiger Name nach Bereinigung.");
+    if (!safe || !NAME_PATTERN.test(safe)) {
+      throw new Error("Ungültiger Name. Erlaubt sind nur Buchstaben, Leerzeichen, Punkt, Apostroph oder Bindestrich.");
     }
     return safe;
   });
@@ -118,7 +311,13 @@ const validateNames = (names) => {
 const generateId = () => `list-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
 const persistLists = () => {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ lists, activeListId }));
+  const storedLists = lists.map((l) => ({
+    id: l.id,
+    name: l.name,
+    names: l.id === activeListId ? allNames : l.names,
+    blocked: [], // Sperrungen gelten nur für die aktuelle Sitzung
+  }));
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ lists: storedLists, activeListId }));
 };
 
 const renderListOptions = () => {
@@ -127,7 +326,9 @@ const renderListOptions = () => {
   lists.forEach((list) => {
     const option = document.createElement("option");
     option.value = list.id;
-    option.textContent = list.name || "Unbenannt";
+    const count = Array.isArray(list.names) ? list.names.length : 0;
+    const label = list.name || "Unbenannt";
+    option.textContent = `${label} (${count})`;
     listSelect.appendChild(option);
   });
   if (activeListId) {
@@ -144,8 +345,11 @@ const setActiveList = (listId, statusMessage) => {
   if (!target) return;
   activeListId = target.id;
   allNames = [...target.names];
-  availableNames = [...target.names];
+  // Bei jedem Laden einer Liste starten wir mit einem frischen Durchgang.
+  blockedNames = [];
   drawnNames = [];
+  ensureHistoryGroup(activeListId, target.name);
+  refreshAvailability();
   jsonEditor.value = target.names.join("\n");
   listSelect.value = target.id;
   if (listNameInput) {
@@ -153,6 +357,8 @@ const setActiveList = (listId, statusMessage) => {
   }
   renderListOptions();
   renderDrawnList();
+  renderHistory();
+  updateModeCopy();
   if (statusMessage) {
     setStatus(drawStatus, statusMessage);
   } else {
@@ -173,6 +379,7 @@ const normalizeStoredData = (raw) => {
       id: l.id || generateId(),
       name: l.name || `Liste ${idx + 1}`,
       names: validateNames(l.names || []),
+      blocked: Array.isArray(l.blocked) ? l.blocked.map((n) => sanitizeName(n)).filter(Boolean) : [],
     }));
     const activeId = normalized.find((l) => l.id === raw.activeListId)?.id || normalized[0]?.id || null;
     return { lists: normalized, activeId };
@@ -192,6 +399,7 @@ const loadNames = async () => {
         activeListId = normalized.activeId;
         setActiveList(activeListId, "Bereit. Listen aus letzter Sitzung geladen.");
         persistLists();
+        updateModeCopy();
         return;
       }
     }
@@ -208,8 +416,9 @@ const loadNames = async () => {
     const data = await response.json();
     const names = validateNames(data.names || []);
     const id = generateId();
-    lists = [{ id, name: "Standard-Liste", names }];
+    lists = [{ id, name: "Standard-Liste", names, blocked: [] }];
     activeListId = id;
+    updateModeCopy();
     persistLists();
     setActiveList(activeListId, "Bereit. Standard-Liste geladen.");
   } catch (err) {
@@ -217,25 +426,109 @@ const loadNames = async () => {
   }
 };
 
+const exportLists = () => {
+  if (!lists.length) {
+    setStatus(editorStatus, "Keine Listen zum Exportieren.", true);
+    return;
+  }
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    activeListId,
+    lists,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "name-randomizer-lists.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  setStatus(editorStatus, "Listen exportiert.");
+};
+
+const importListsFromFile = async (file) => {
+  try {
+    const isJsonType =
+      file.type === "application/json" ||
+      file.type === "application/x-json" ||
+      file.name.toLowerCase().endsWith(".json");
+    if (!isJsonType) {
+      throw new Error("Nur JSON-Dateien (.json) können importiert werden.");
+    }
+    const text = await file.text();
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (parseErr) {
+      throw new Error("Ungültiges JSON-Format.");
+    }
+    const normalized = normalizeStoredData(parsed);
+    if (!normalized || !normalized.lists.length) {
+      throw new Error("Keine gültigen Listen gefunden.");
+    }
+    const limitedLists = normalized.lists.slice(0, MAX_LISTS);
+    const activeCandidate = limitedLists.find((l) => l.id === normalized.activeId)?.id || limitedLists[0].id;
+    historyByList = {};
+    lists = limitedLists;
+    activeListId = activeCandidate;
+    setActiveList(activeListId, "Listen importiert.");
+    persistLists();
+    setStatus(editorStatus, "Import erfolgreich.");
+  } catch (err) {
+    setStatus(editorStatus, `Import fehlgeschlagen: ${err.message}`, true);
+  } finally {
+    if (importFileInput) {
+      importFileInput.value = "";
+    }
+  }
+};
+
 const drawRandomName = () => {
   if (availableNames.length === 0) {
-    setStatus(drawStatus, "Alle Namen wurden bereits gezogen.", true);
+    setStatus(drawStatus, "Alle Namen wurden gezogen. Setze die Liste zurück, um neu zu starten.", true);
     return;
   }
   const index = Math.floor(Math.random() * availableNames.length);
-  const [name] = availableNames.splice(index, 1);
+  const name = availableNames[index];
+  availableNames.splice(index, 1);
+  if (!blockedNames.includes(name)) {
+    blockedNames.push(name);
+  }
   drawnNames.push(name);
-  setStatus(drawStatus, `Gezogen: ${name}`);
+  ensureHistoryGroup(activeListId, listNameInput?.value || lists.find((l) => l.id === activeListId)?.name);
+  addHistoryEntry(activeListId, name);
+  setStatus(drawStatus, `Gezogen: ${name} (ohne Wiederholung)`);
   renderDrawnList();
+  renderHistory();
   drawBtn.focus();
+  persistLists();
 };
 
 const resetLists = () => {
-  availableNames = [...allNames];
   drawnNames = [];
+  blockedNames = [];
+  ensureHistoryGroup(activeListId, lists.find((l) => l.id === activeListId)?.name);
+  refreshAvailability();
+  startNewHistoryRound(activeListId);
   setStatus(drawStatus, "Liste zurückgesetzt.");
   renderDrawnList();
+  renderHistory();
   drawBtn.focus();
+  persistLists();
+};
+
+const startNewRound = () => {
+  drawnNames = [];
+  ensureHistoryGroup(activeListId, lists.find((l) => l.id === activeListId)?.name);
+  refreshAvailability();
+  startNewHistoryRound(activeListId);
+  renderDrawnList();
+  setStatus(drawStatus, "Neue Runde gestartet. Bisher gezogene Namen bleiben gesperrt.");
+  renderHistory();
+  drawBtn.focus();
+  persistLists();
 };
 
 const saveFromEditor = () => {
@@ -252,23 +545,25 @@ const saveFromEditor = () => {
         return;
       }
       const newId = generateId();
-      lists.push({ id: newId, name: currentName, names });
+      lists.push({ id: newId, name: currentName, names, blocked: [] });
       activeListId = newId;
     } else {
       const idx = lists.findIndex((l) => l.id === activeListId);
       if (idx >= 0) {
-        lists[idx] = { ...lists[idx], name: currentName, names };
+        blockedNames = blockedNames.filter((n) => names.includes(n));
+        lists[idx] = { ...lists[idx], name: currentName, names, blocked: blockedNames };
       } else {
         if (lists.length >= MAX_LISTS) {
           setStatus(editorStatus, `Maximal ${MAX_LISTS} Listen möglich.`, true);
           return;
         }
-        lists.push({ id: activeListId, name: currentName, names });
+        blockedNames = blockedNames.filter((n) => names.includes(n));
+        lists.push({ id: activeListId, name: currentName, names, blocked: blockedNames });
       }
     }
     allNames = names;
-    availableNames = [...names];
     drawnNames = [];
+    refreshAvailability();
     jsonEditor.value = names.join("\n");
     persistLists();
     renderListOptions();
@@ -293,14 +588,19 @@ const clearList = () => {
   if (!activeListId) return;
   const idx = lists.findIndex((l) => l.id === activeListId);
   if (idx >= 0) {
-    lists[idx] = { ...lists[idx], names: [] };
+    lists[idx] = { ...lists[idx], names: [], blocked: [] };
   }
   allNames = [];
   availableNames = [];
+  blockedNames = [];
   drawnNames = [];
+  if (historyByList[activeListId]) {
+    historyByList[activeListId].rounds = [{ label: 1, entries: [] }];
+  }
   jsonEditor.value = "";
   persistLists();
   renderDrawnList();
+  renderHistory();
   setStatus(editorStatus, "Liste geleert.");
   setStatus(drawStatus, "Keine Namen in dieser Liste.", true);
   jsonEditor.focus();
@@ -334,8 +634,9 @@ const createNewList = () => {
   }
   const newId = generateId();
   const defaultName = "Neue Liste";
-  lists.push({ id: newId, name: defaultName, names: [] });
+  lists.push({ id: newId, name: defaultName, names: [], blocked: [] });
   activeListId = newId;
+  ensureHistoryGroup(newId, defaultName);
   persistLists();
   renderListOptions();
   if (listNameInput) {
@@ -363,10 +664,24 @@ const handleListInput = (value) => {
     const idx = lists.findIndex((l) => l.id === activeListId);
     if (idx >= 0) {
       lists[idx] = { ...lists[idx], name: trimmed };
+      if (historyByList[activeListId]) {
+        historyByList[activeListId].name = trimmed;
+      }
       persistLists();
       renderListOptions();
     }
   }
+};
+
+const openHistoryDrawer = () => {
+  if (!historyDrawer) return;
+  historyDrawer.setAttribute("aria-hidden", "false");
+  renderHistory();
+};
+
+const closeHistoryDrawer = () => {
+  if (!historyDrawer) return;
+  historyDrawer.setAttribute("aria-hidden", "true");
 };
 
 drawBtn.addEventListener("click", drawRandomName);
@@ -377,6 +692,30 @@ newListBtn.addEventListener("click", createNewList);
 deleteListBtn.addEventListener("click", deleteActiveList);
 listSelect.addEventListener("change", (e) => setActiveList(e.target.value, "Liste geladen."));
 listNameInput.addEventListener("input", (e) => handleListInput(e.target.value));
+if (newRoundBtn) {
+  newRoundBtn.addEventListener("click", startNewRound);
+}
+if (historyBtn) {
+  historyBtn.addEventListener("click", openHistoryDrawer);
+}
+if (closeHistoryBtn) {
+  closeHistoryBtn.addEventListener("click", closeHistoryDrawer);
+}
+if (downloadHistoryBtn) {
+  downloadHistoryBtn.addEventListener("click", handleDownloadHistory);
+}
+if (exportListsBtn) {
+  exportListsBtn.addEventListener("click", exportLists);
+}
+if (importListsBtn && importFileInput) {
+  importListsBtn.addEventListener("click", () => importFileInput.click());
+  importFileInput.addEventListener("change", (e) => {
+    const [file] = e.target.files || [];
+    if (file) {
+      importListsFromFile(file);
+    }
+  });
+}
 const modalOverlay = document.getElementById("modalOverlay");
 const modalConfirm = document.getElementById("modalConfirm");
 const modalCancel = document.getElementById("modalCancel");
@@ -394,28 +733,48 @@ if (modalConfirm) {
       closeDeleteModal();
       return;
     }
-    const current = lists.find((l) => l.id === pendingDeleteId);
-    const nameLabel = current?.name || "Diese Liste";
-    if (lists.length === 1) {
-      clearList();
-      setStatus(editorStatus, `"${nameLabel}" geleert (letzte Liste).`);
-    } else {
-      lists = lists.filter((l) => l.id !== pendingDeleteId);
-      activeListId = lists[0]?.id || null;
-      persistLists();
-      renderListOptions();
-      if (activeListId) {
-        setActiveList(activeListId, "Liste gelöscht. Nächste Liste geladen.");
-        setStatus(editorStatus, `"${nameLabel}" gelöscht.`);
-      } else {
-        allNames = [];
-        availableNames = [];
-        drawnNames = [];
-        jsonEditor.value = "";
-        renderDrawnList();
-        setStatus(drawStatus, "Keine Liste vorhanden.", true);
+  const current = lists.find((l) => l.id === pendingDeleteId);
+  const nameLabel = current?.name || "Diese Liste";
+  if (lists.length === 1) {
+    lists = [];
+    activeListId = null;
+    allNames = [];
+    availableNames = [];
+    drawnNames = [];
+    blockedNames = [];
+    historyByList = {};
+    jsonEditor.value = "";
+    renderListOptions();
+    renderDrawnList();
+    renderHistory();
+    setStatus(editorStatus, `"${nameLabel}" gelöscht (letzte Liste).`);
+    setStatus(drawStatus, "Keine Liste vorhanden.", true);
+    persistLists();
+  } else {
+    lists = lists.filter((l) => l.id !== pendingDeleteId);
+    delete historyByList[pendingDeleteId];
+    activeListId = lists[0]?.id || null;
+    renderListOptions();
+    if (activeListId) {
+      if (!historyByList[activeListId]) {
+        historyByList[activeListId] = { name: lists[0].name || "Unbenannt", entries: [] };
       }
+      setActiveList(activeListId, "Liste gelöscht. Nächste Liste geladen.");
+      setStatus(editorStatus, `"${nameLabel}" gelöscht.`);
+      persistLists();
+    } else {
+      allNames = [];
+      availableNames = [];
+      drawnNames = [];
+      blockedNames = [];
+      historyByList = {};
+      jsonEditor.value = "";
+      renderDrawnList();
+      renderHistory();
+      setStatus(drawStatus, "Keine Liste vorhanden.", true);
+      persistLists();
     }
+  }
     pendingDeleteId = null;
     closeDeleteModal();
   });

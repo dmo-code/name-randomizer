@@ -263,7 +263,8 @@ const renderHistory = () => {
         entryList.classList.add("history__list");
         round.entries.forEach((entry, idx) => {
           const li = document.createElement("li");
-          li.textContent = `${idx + 1}. ${entry.name}`;
+          const label = typeof entry === "string" ? entry : entry?.name;
+          li.textContent = `${idx + 1}. ${label ?? ""}`;
           entryList.appendChild(li);
         });
         roundItem.appendChild(entryList);

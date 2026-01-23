@@ -36,6 +36,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-width: 375px;
   font-size: 18px;
   font-family: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
   color: var(--text);
@@ -326,6 +327,21 @@ select.input {
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
 }
 
+.btn--with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  text-align: center;
+}
+
+.btn__icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  display: block;
+}
+
 .btn.primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: #0c1220;
@@ -362,6 +378,10 @@ select.input {
 
 .btn:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.btn--align-right {
+  margin-left: auto;
 }
 
 .status {
@@ -516,6 +536,18 @@ kbd {
   border: 1px solid var(--border);
 }
 
+@media (max-width: 900px) {
+  .hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn--align-right {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 640px) {
   body {
     padding: 0 12px 32px;
@@ -526,7 +558,6 @@ kbd {
     padding: 18px;
   }
 
-  .hero__actions,
   .editor__actions {
     flex-direction: column;
     align-items: stretch;

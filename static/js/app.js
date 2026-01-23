@@ -21,6 +21,9 @@ const historyDownloadFormat = $("#historyDownloadFormat");
 const historyList = $("#historyList");
 const historyEmpty = $("#historyEmpty");
 const drawnList = $("#drawnList");
+const dataSection = $("#dataSection");
+const toggleDataBtn = $("#toggleDataBtn");
+const toggleDataLabel = $("#toggleDataLabel");
 const emptyState = $("#emptyState");
 const drawStatus = $("#drawStatus");
 const metaInfo = $("#metaInfo");
@@ -38,6 +41,20 @@ let blockedNames = [];
 let lists = [];
 let activeListId = null;
 let historyByList = {};
+
+const updateDataVisibility = (isVisible) => {
+  if (!dataSection || !toggleDataBtn) return;
+  dataSection.hidden = !isVisible;
+  toggleDataBtn.setAttribute("aria-expanded", String(isVisible));
+  const label = isVisible ? "Daten ausblenden" : "Daten anzeigen";
+  if (toggleDataLabel) toggleDataLabel.textContent = label;
+  else toggleDataBtn.textContent = label;
+};
+
+const toggleDataSection = () => {
+  if (!dataSection) return;
+  updateDataVisibility(dataSection.hidden);
+};
 
 const ensureHistoryGroup = (listId, name) => {
   if (!listId) return;
@@ -689,6 +706,10 @@ drawBtn.addEventListener("click", drawRandomName);
 resetBtn.addEventListener("click", resetLists);
 saveBtn.addEventListener("click", saveFromEditor);
 clearBtn.addEventListener("click", clearList);
+if (toggleDataBtn && dataSection) {
+  updateDataVisibility(!dataSection.hidden);
+  toggleDataBtn.addEventListener("click", toggleDataSection);
+}
 newListBtn.addEventListener("click", createNewList);
 deleteListBtn.addEventListener("click", deleteActiveList);
 listSelect.addEventListener("change", (e) => setActiveList(e.target.value, "Liste geladen."));

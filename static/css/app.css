@@ -485,6 +485,19 @@ select.input {
 .drawer__actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.drawer__actions-full {
+  flex-basis: 100%;
+}
+
+.drawer__actions-full .btn {
+  width: 100%;
+}
+
+.drawer__actions-full .input {
+  width: 100%;
 }
 
 .drawer__actions--stacked {

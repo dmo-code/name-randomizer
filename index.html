@@ -18,7 +18,7 @@
     <header class="hero" role="banner">
         <div class="hero__top">
             <div class="hero__badge" aria-label="Version">
-                Version 1.1.2
+                Version 1.1.3
             </div>
         </div>
         <p class="eyebrow">Team-Tool • schnell • einfach • wiederverwendbar</p>
@@ -30,8 +30,8 @@
         </p>
         <div class="hero__actions">
             <button id="drawBtn" class="btn primary" type="button">Namen ziehen</button>
-            <button id="newRoundBtn" class="btn ghost" type="button">Neue Runde (ohne bisherige)</button>
-            <button id="resetBtn" class="btn ghost" type="button">Liste zurücksetzen</button>
+            <button id="newRoundBtn" class="btn ghost" type="button">Neue Ziehung (ohne bisherige)</button>
+            <button id="resetBtn" class="btn ghost" type="button">Ziehung zurücksetzen</button>
             <button id="historyBtn" class="btn ghost" type="button">Zieh-Verlauf</button>
             <button id="toggleDataBtn" class="btn ghost btn--align-right btn--with-icon" type="button"
                 aria-controls="dataSection"
@@ -141,11 +141,18 @@
             <button id="closeHistoryBtn" class="btn ghost" type="button">Schließen</button>
         </div>
         <div class="drawer__actions drawer__actions--stacked">
-            <select id="historyDownloadFormat" class="input input--dense">
-                <option value="txt">TXT</option>
-                <option value="md">Markdown</option>
-            </select>
-            <button id="downloadHistoryBtn" class="btn ghost" type="button">Download</button>
+            <div class="drawer__actions-full">
+                <select id="historyDownloadFormat" class="input input--dense">
+                    <option value="txt">TXT</option>
+                    <option value="md">Markdown</option>
+                </select>
+            </div>
+            <div class="drawer__actions-full">
+                <button id="downloadHistoryBtn" class="btn ghost" type="button">Download</button>
+            </div>
+            <div class="drawer__actions-full">
+                <button id="clearHistoryBtn" class="btn ghost danger" type="button">Verlauf & Ziehung löschen</button>
+            </div>
         </div>
         <div class="drawer__body" id="historyBody">
             <p class="helper" id="historyEmpty">Noch keine Ziehungen in dieser Sitzung.</p>

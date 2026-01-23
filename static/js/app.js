@@ -17,6 +17,7 @@ const historyBtn = $("#historyBtn");
 const historyDrawer = $("#historyDrawer");
 const closeHistoryBtn = $("#closeHistoryBtn");
 const downloadHistoryBtn = $("#downloadHistoryBtn");
+const clearHistoryBtn = $("#clearHistoryBtn");
 const historyDownloadFormat = $("#historyDownloadFormat");
 const historyList = $("#historyList");
 const historyEmpty = $("#historyEmpty");
@@ -174,6 +175,17 @@ const handleDownloadHistory = () => {
     downloadHistoryTxt();
   }
 };
+
+const clearHistory = () => {
+  const hadHistory = historyByList && Object.keys(historyByList).length > 0;
+  historyByList = {};
+  drawnNames = [];
+  blockedNames = [];
+  refreshAvailability();
+  renderDrawnList();
+  renderHistory();
+  setStatus(drawStatus, hadHistory ? "Verlauf und Ziehung gelöscht." : "Ziehung zurückgesetzt.");
+};
 const setStatus = (el, message, isError = false) => {
   el.textContent = message;
   el.classList.toggle("error", isError);
@@ -216,7 +228,7 @@ const updateModeCopy = () => {
   if (newRoundBtn) {
     newRoundBtn.disabled = false;
     newRoundBtn.removeAttribute("aria-disabled");
-    newRoundBtn.title = "Neue Runde ohne bisherige Namen starten";
+    newRoundBtn.title = "Neue Ziehung ohne bisherige Namen starten";
   }
 };
 
@@ -725,6 +737,9 @@ if (closeHistoryBtn) {
 }
 if (downloadHistoryBtn) {
   downloadHistoryBtn.addEventListener("click", handleDownloadHistory);
+}
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener("click", clearHistory);
 }
 if (exportListsBtn) {
   exportListsBtn.addEventListener("click", exportLists);
